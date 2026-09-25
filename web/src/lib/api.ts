@@ -292,6 +292,12 @@ export interface UploadProgress {
 
 const CHUNK_RETRIES = 3
 
+/** Network failures, rate limiting and server errors may succeed on retry. */
+function isRetryable(err: unknown): boolean {
+  if (!(err instanceof ApiError)) return true
+  return err.status === 408 || err.status === 429 || err.status >= 500
+}
+
 function putChunk(
   sessionID: string,
   index: number,
@@ -301,16 +307,25 @@ function putChunk(
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
+    const abort = () => xhr.abort()
+    xhr.addEventListener("loadend", () => signal?.removeEventListener("abort", abort))
     xhr.open("PUT", `${BASE}/uploads/${sessionID}/chunks/${index}`)
     xhr.setRequestHeader("Authorization", `Bearer ${getToken() ?? ""}`)
     xhr.upload.onprogress = (e) => onBytes(e.loaded)
     xhr.onload = () => {
-      if (xhr.status >= 200 && xhr.status < 300) resolve()
-      else reject(new ApiError(xhr.status, `chunk ${index} failed (${xhr.status})`))
+      if (xhr.status >= 200 && xhr.status < 300) return resolve()
+      let msg = `chunk ${index} failed (${xhr.status})`
+      try {
+        const body = JSON.parse(xhr.responseText) as { error?: unknown }
+        if (body.error) msg = String(body.error)
+      } catch {
+        // non-JSON body; keep the generic message
+      }
+      reject(new ApiError(xhr.status, msg))
     }
     xhr.onerror = () => reject(new Error(`chunk ${index}: network error`))
     xhr.onabort = () => reject(new DOMException("upload aborted", "AbortError"))
-    signal?.addEventListener("abort", () => xhr.abort(), { once: true })
+    signal?.addEventListener("abort", abort, { once: true })
     xhr.send(blob)
   })
 }
@@ -371,8 +386,11 @@ export async function uploadFile(
         break
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") throw err
+        if (!isRetryable(err)) throw err
         lastErr = err
-        await new Promise((r) => setTimeout(r, 500 * 2 ** attempt))
+        if (attempt < CHUNK_RETRIES) {
+          await new Promise((r) => setTimeout(r, 500 * 2 ** attempt))
+        }
       }
     }
     if (lastErr) throw lastErr
