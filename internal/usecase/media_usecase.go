@@ -377,8 +377,8 @@ func (u *MediaUsecase) buildDerivatives(ctx context.Context, item *domain.MediaI
 // media was actually taken/recorded, in the order we trust them. ffprobe
 // normalises tag keys to lowercase.
 var capturedAtTagKeys = [...]string{
-	"creation_time",                       // MP4/MOV/Matroska
-	"com.apple.quicktime.creationdate",    // iPhone videos (local time w/ zone)
+	"creation_time",                          // MP4/MOV/Matroska
+	"com.apple.quicktime.creationdate",       // iPhone videos (local time w/ zone)
 	"date_time_original", "datetimeoriginal", // EXIF passthrough
 	"date", // ID3 / Vorbis (often just a year)
 }
