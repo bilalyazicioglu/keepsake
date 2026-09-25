@@ -10,8 +10,8 @@ services:
       POSTGRES_DB: mediacloud
     volumes:
       - pgdata:/var/lib/postgresql/data
-      # Schema files are applied automatically on first boot of a fresh volume.
-      - ./migrations:/docker-entrypoint-initdb.d:ro
+      # The schema is applied by the app on startup (migrations/ is embedded
+      # in the binary and tracked in schema_migrations), not by initdb.
     ports:
       # Published for the local dev flow (`make db-up` + `make run` on the
       # host). Remove if the stack only ever runs fully containerized.
