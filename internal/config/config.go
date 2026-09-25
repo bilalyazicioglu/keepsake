@@ -3,6 +3,7 @@ package config
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"os"
 	"runtime"
@@ -40,46 +41,64 @@ type Config struct {
 }
 
 // Load reads configuration from the environment, applying safe defaults for a
-// low-spec home server. It fails fast on values that cannot possibly work.
+// low-spec home server. It fails fast on values that cannot possibly work and
+// reports every invalid variable at once rather than only the first.
 func Load() (*Config, error) {
+	var env envReader
 	cfg := &Config{
-		Port:              getInt("PORT", 8080),
-		WebDir:            getStr("WEB_DIR", "./static"),
-		DatabaseURL:       getStr("DATABASE_URL", "postgres://mediauser:mediapass@localhost:5432/mediacloud?sslmode=disable"),
-		StoragePath:       getStr("STORAGE_PATH", "./data/media"),
-		JWTSecret:         getStr("JWT_SECRET", ""),
-		TokenTTL:          getDuration("TOKEN_TTL", 72*time.Hour),
-		MaxWorkers:        getInt("MAX_WORKERS", defaultWorkers()),
-		JobQueueSize:      getInt("JOB_QUEUE_SIZE", 128),
-		ProcessTimeout:    getDuration("PROCESS_TIMEOUT", 45*time.Minute),
-		MaxUploadBytes:    getInt64("MAX_UPLOAD_BYTES", 10<<30), // 10 GiB
-		HLSSegmentSeconds: getInt("HLS_SEGMENT_SECONDS", 6),
-		HWAccel:           getStr("HWACCEL", "auto"),
-		UploadTTL:         getDuration("UPLOAD_TTL", 48*time.Hour),
-		FFmpegPath:        getStr("FFMPEG_PATH", "ffmpeg"),
-		FFprobePath:       getStr("FFPROBE_PATH", "ffprobe"),
+		Port:              env.int("PORT", 8080),
+		WebDir:            env.str("WEB_DIR", "./static"),
+		DatabaseURL:       env.str("DATABASE_URL", "postgres://mediauser:mediapass@localhost:5432/mediacloud?sslmode=disable"),
+		StoragePath:       env.str("STORAGE_PATH", "./data/media"),
+		JWTSecret:         env.str("JWT_SECRET", ""),
+		TokenTTL:          env.duration("TOKEN_TTL", 72*time.Hour),
+		MaxWorkers:        env.int("MAX_WORKERS", defaultWorkers()),
+		JobQueueSize:      env.int("JOB_QUEUE_SIZE", 128),
+		ProcessTimeout:    env.duration("PROCESS_TIMEOUT", 45*time.Minute),
+		MaxUploadBytes:    env.int64("MAX_UPLOAD_BYTES", 10<<30), // 10 GiB
+		HLSSegmentSeconds: env.int("HLS_SEGMENT_SECONDS", 6),
+		HWAccel:           env.str("HWACCEL", "auto"),
+		UploadTTL:         env.duration("UPLOAD_TTL", 48*time.Hour),
+		FFmpegPath:        env.str("FFMPEG_PATH", "ffmpeg"),
+		FFprobePath:       env.str("FFPROBE_PATH", "ffprobe"),
 	}
 
 	if cfg.Port <= 0 || cfg.Port > 65535 {
-		return nil, fmt.Errorf("config: PORT %d out of range", cfg.Port)
+		env.fail("PORT %d out of range", cfg.Port)
 	}
 	if cfg.MaxWorkers < 1 {
-		return nil, fmt.Errorf("config: MAX_WORKERS must be >= 1, got %d", cfg.MaxWorkers)
+		env.fail("MAX_WORKERS must be >= 1, got %d", cfg.MaxWorkers)
 	}
 	if cfg.JobQueueSize < 1 {
-		return nil, fmt.Errorf("config: JOB_QUEUE_SIZE must be >= 1, got %d", cfg.JobQueueSize)
+		env.fail("JOB_QUEUE_SIZE must be >= 1, got %d", cfg.JobQueueSize)
 	}
 	if cfg.MaxUploadBytes < 1 {
-		return nil, fmt.Errorf("config: MAX_UPLOAD_BYTES must be >= 1, got %d", cfg.MaxUploadBytes)
+		env.fail("MAX_UPLOAD_BYTES must be >= 1, got %d", cfg.MaxUploadBytes)
 	}
 	if cfg.HLSSegmentSeconds < 1 {
-		return nil, fmt.Errorf("config: HLS_SEGMENT_SECONDS must be >= 1, got %d", cfg.HLSSegmentSeconds)
+		env.fail("HLS_SEGMENT_SECONDS must be >= 1, got %d", cfg.HLSSegmentSeconds)
+	}
+	for _, d := range []struct {
+		key string
+		val time.Duration
+	}{
+		{"TOKEN_TTL", cfg.TokenTTL},
+		{"PROCESS_TIMEOUT", cfg.ProcessTimeout},
+		{"UPLOAD_TTL", cfg.UploadTTL},
+	} {
+		if d.val <= 0 {
+			env.fail("%s must be positive, got %s", d.key, d.val)
+		}
 	}
 	switch cfg.HWAccel {
 	case "auto", "videotoolbox", "none":
 	default:
-		return nil, fmt.Errorf("config: HWACCEL must be auto, videotoolbox or none, got %q", cfg.HWAccel)
+		env.fail("HWACCEL must be auto, videotoolbox or none, got %q", cfg.HWAccel)
 	}
+	if err := env.err(); err != nil {
+		return nil, err
+	}
+
 	if cfg.JWTSecret == "" {
 		secret, err := randomSecret()
 		if err != nil {
@@ -109,36 +128,62 @@ func randomSecret() (string, error) {
 	return hex.EncodeToString(buf), nil
 }
 
-func getStr(key, def string) string {
+// envReader reads typed environment variables, collecting every parse and
+// validation failure so they can be reported together.
+type envReader struct {
+	errs []error
+}
+
+func (e *envReader) fail(format string, args ...any) {
+	e.errs = append(e.errs, fmt.Errorf("config: "+format, args...))
+}
+
+func (e *envReader) err() error {
+	return errors.Join(e.errs...)
+}
+
+func (e *envReader) str(key, def string) string {
 	if v := os.Getenv(key); v != "" {
 		return v
 	}
 	return def
 }
 
-func getInt(key string, def int) int {
-	if v := os.Getenv(key); v != "" {
-		if n, err := strconv.Atoi(v); err == nil {
-			return n
-		}
+func (e *envReader) int(key string, def int) int {
+	v := os.Getenv(key)
+	if v == "" {
+		return def
 	}
-	return def
+	n, err := strconv.Atoi(v)
+	if err != nil {
+		e.fail("%s must be an integer, got %q", key, v)
+		return def
+	}
+	return n
 }
 
-func getInt64(key string, def int64) int64 {
-	if v := os.Getenv(key); v != "" {
-		if n, err := strconv.ParseInt(v, 10, 64); err == nil {
-			return n
-		}
+func (e *envReader) int64(key string, def int64) int64 {
+	v := os.Getenv(key)
+	if v == "" {
+		return def
 	}
-	return def
+	n, err := strconv.ParseInt(v, 10, 64)
+	if err != nil {
+		e.fail("%s must be an integer number of bytes, got %q", key, v)
+		return def
+	}
+	return n
 }
 
-func getDuration(key string, def time.Duration) time.Duration {
-	if v := os.Getenv(key); v != "" {
-		if d, err := time.ParseDuration(v); err == nil {
-			return d
-		}
+func (e *envReader) duration(key string, def time.Duration) time.Duration {
+	v := os.Getenv(key)
+	if v == "" {
+		return def
 	}
-	return def
+	d, err := time.ParseDuration(v)
+	if err != nil {
+		e.fail("%s must be a duration such as 90s, 45m or 72h, got %q", key, v)
+		return def
+	}
+	return d
 }
