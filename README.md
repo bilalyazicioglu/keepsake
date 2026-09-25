@@ -54,7 +54,7 @@ docker compose up --build -d
 
 Open **http://localhost:8080**, create an account, and upload a file.
 
-Keep `JWT_SECRET` the same across restarts, or everyone is signed out. The `pgdata` volume holds the database and `mediadata` holds your media: back up both, and don't remove them when updating.
+Keep `JWT_SECRET` the same across restarts, or everyone is signed out. The `pgdata` volume holds the database and `mediadata` holds your media. Don't remove them when updating, and back up both: [docs/backup.md](docs/backup.md) has tested commands.
 
 > [!IMPORTANT]
 > The Compose file is a development setup. It publishes ports 8080 and 5432 and uses development database credentials. Change the credentials, stop publishing the database port, and put Keepsake behind TLS before exposing it outside your machine.
