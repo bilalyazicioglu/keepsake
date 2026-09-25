@@ -36,6 +36,7 @@ import {
   type MediaType,
   type User,
 } from "@/lib/api"
+import { toastError } from "@/lib/errors"
 import { useMediaEvents } from "@/hooks/use-media-events"
 import { cn } from "@/lib/utils"
 import { AlbumsBar } from "@/components/albums-bar"
@@ -168,7 +169,7 @@ function Library({ user, onLogout }: { user: User; onLogout: () => void }) {
         setTotal(res.total)
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to load library")
+      toastError(err, "Failed to load library")
     } finally {
       setLoading(false)
     }
@@ -182,7 +183,7 @@ function Library({ user, onLogout }: { user: User; onLogout: () => void }) {
   useEffect(() => {
     listCollections()
       .then(setAlbums)
-      .catch(() => toast.error("Failed to load albums"))
+      .catch((err: unknown) => toastError(err, "Failed to load albums"))
   }, [])
 
   const loadMore = async () => {
@@ -200,7 +201,7 @@ function Library({ user, onLogout }: { user: User; onLogout: () => void }) {
       setItems((prev) => [...prev, ...res.items])
       setTotal(res.total)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to load more")
+      toastError(err, "Failed to load more")
     } finally {
       setLoadingMore(false)
     }
@@ -268,7 +269,7 @@ function Library({ user, onLogout }: { user: User; onLogout: () => void }) {
         })
         .catch((err: unknown) => {
           replaceItem(item)
-          toast.error(err instanceof Error ? err.message : "Update failed")
+          toastError(err, "Update failed")
         })
     },
     [replaceItem]
@@ -282,7 +283,7 @@ function Library({ user, onLogout }: { user: User; onLogout: () => void }) {
       setAlbums((prev) => [...prev, album])
       toast.success(`Album "${album.name}" created`)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create album")
+      toastError(err, "Failed to create album")
       throw err
     }
   }, [])
@@ -295,7 +296,7 @@ function Library({ user, onLogout }: { user: User; onLogout: () => void }) {
         toast.success(`Album "${album.name}" deleted`)
       })
       .catch((err: unknown) =>
-        toast.error(err instanceof Error ? err.message : "Failed to delete album")
+        toastError(err, "Failed to delete album")
       )
   }, [])
 
@@ -310,7 +311,7 @@ function Library({ user, onLogout }: { user: User; onLogout: () => void }) {
           toast.success(`Removed from "${album.name}"`)
         })
         .catch((err: unknown) =>
-          toast.error(err instanceof Error ? err.message : "Failed to remove")
+          toastError(err, "Failed to remove")
         )
     },
     []

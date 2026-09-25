@@ -27,6 +27,7 @@ import {
   type Collection,
   type MediaItem,
 } from "@/lib/api"
+import { toastError } from "@/lib/errors"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -150,7 +151,7 @@ export function PlayerDialog({
       })
       onUpdated(updated)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Update failed")
+      toastError(err, "Update failed")
     }
   }
 
@@ -168,7 +169,7 @@ export function PlayerDialog({
       setRenaming(false)
       toast.success("Renamed")
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Rename failed")
+      toastError(err, "Rename failed")
     }
   }
 
@@ -200,7 +201,7 @@ export function PlayerDialog({
       onDeleted(item.id)
       onClose()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Delete failed")
+      toastError(err, "Delete failed")
     } finally {
       setDeleting(false)
     }
