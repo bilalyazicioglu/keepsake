@@ -1,15 +1,15 @@
 # Maintainer workflow
 
-This file documents settings to apply in GitHub. Adding it does not activate branch protection, create labels, or create issues.
+The repository uses the following GitHub configuration. Keep this document in sync with repository settings.
 
 ## Branching
 
 Keep `main` as the integration branch. Work on short-lived `feat/*`, `fix/*`, `docs/*`, or `chore/*` branches and open focused pull requests. Do not introduce `develop` or permanent release branches until maintaining multiple supported release lines requires them.
 
-- Prefer squash merges with descriptive titles.
-- Require PRs into main, resolve conversations, block force pushes and branch deletion.
+- Squash merge is the enabled merge method; merged branches are deleted automatically.
+- Main requires pull requests, resolved conversations, and linear history. Force pushes and branch deletion are blocked. The owner retains administrator bypass for maintenance.
 - Add required CI checks only after the corresponding jobs exist and pass.
-- For a solo maintainer, do not require an independent approval on every self-authored PR: it would block normal work. Review external PRs yourself.
+- No independent approval is required for self-authored PRs. Review external contributions before merging.
 - Tag releases as `v0.x.y` after the release acceptance checks pass. Tags identify releases; they do not replace release notes or a backup/migration policy.
 
 ## Labels and triage
@@ -18,7 +18,7 @@ Use `bug`, `enhancement`, `documentation`, `help wanted`, `good first issue`, an
 
 Issue forms use the standard bug/enhancement labels; create them first if missing. Reserve `good first issue` for tasks with a clear expected result, relevant files, and a small scope. Do not apply it to security, migrations, or resumable upload correctness.
 
-Start with one board: Backlog → Ready → In progress → Done. Use milestones for outcomes, not a calendar of promised dates.
+The initial tracked work is [first-run setup](https://github.com/bilalyazicioglu/outofmatrix/issues/2), [baseline CI](https://github.com/bilalyazicioglu/outofmatrix/issues/3), and [a reproducible demo](https://github.com/bilalyazicioglu/outofmatrix/issues/4). CI checks are not required yet; enable them after the first workflows pass.
 
 ## Release readiness
 
