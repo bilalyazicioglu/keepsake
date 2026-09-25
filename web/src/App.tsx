@@ -24,6 +24,7 @@ import {
   getStoredUser,
   getToken,
   listCollections,
+  onUnauthorized,
   listMedia,
   patchMedia,
   removeFromCollection,
@@ -80,6 +81,18 @@ const SORT_LABELS: Record<MediaSort, string> = {
 export default function App() {
   const [user, setUser] = useState<User | null>(() =>
     getToken() ? getStoredUser() : null
+  )
+
+  useEffect(
+    () =>
+      onUnauthorized(() => {
+        setUser(null)
+        // Parallel requests all fail at once; the id keeps it to one toast.
+        toast.info("Your session has expired. Sign in again.", {
+          id: "session-expired",
+        })
+      }),
+    []
   )
 
   if (!user) {
