@@ -143,6 +143,7 @@ func (h *StreamHandler) Raw(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	sandboxUserContent(w)
 	if item.MimeType != "" {
 		w.Header().Set("Content-Type", item.MimeType)
 	}
@@ -160,7 +161,19 @@ func (h *StreamHandler) Thumbnail(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, fmt.Errorf("%w: no thumbnail", domain.ErrNotFound))
 		return
 	}
+	sandboxUserContent(w)
 	w.Header().Set("Content-Type", "image/jpeg")
 	w.Header().Set("Cache-Control", "private, max-age=86400")
 	http.ServeFile(w, r, h.media.AbsPath(item.ThumbnailPath))
+}
+
+// sandboxUserContent keeps uploaded bytes inert when a browser navigates to
+// them directly. Originals are served with the uploader's MIME type, and an
+// SVG or other active document would otherwise run script on the app's
+// origin, where the session token lives. The headers do not affect <img>,
+// <audio> or <video> embedding.
+func sandboxUserContent(w http.ResponseWriter) {
+	h := w.Header()
+	h.Set("X-Content-Type-Options", "nosniff")
+	h.Set("Content-Security-Policy", "default-src 'none'; img-src 'self' data:; media-src 'self'; style-src 'unsafe-inline'; sandbox")
 }
