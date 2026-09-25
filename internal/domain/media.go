@@ -73,18 +73,18 @@ type MediaMetadata struct {
 // so the whole library can be moved to another disk or host without a data
 // migration.
 type MediaItem struct {
-	ID            uuid.UUID     `json:"id"`
-	UserID        uuid.UUID     `json:"user_id"`
-	Title         string        `json:"title"`
-	FilePath      string        `json:"file_path"`
-	Type          MediaType     `json:"type"`
-	Status        MediaStatus   `json:"status"`
-	FileSize      int64         `json:"file_size"`
-	MimeType      string        `json:"mime_type"`
-	BlurHash      string        `json:"blur_hash,omitempty"`
-	ThumbnailPath string        `json:"thumbnail_path,omitempty"`
-	HLSPath       string        `json:"hls_path,omitempty"`
-	IsFavorite    bool          `json:"is_favorite"`
+	ID            uuid.UUID   `json:"id"`
+	UserID        uuid.UUID   `json:"user_id"`
+	Title         string      `json:"title"`
+	FilePath      string      `json:"file_path"`
+	Type          MediaType   `json:"type"`
+	Status        MediaStatus `json:"status"`
+	FileSize      int64       `json:"file_size"`
+	MimeType      string      `json:"mime_type"`
+	BlurHash      string      `json:"blur_hash,omitempty"`
+	ThumbnailPath string      `json:"thumbnail_path,omitempty"`
+	HLSPath       string      `json:"hls_path,omitempty"`
+	IsFavorite    bool        `json:"is_favorite"`
 	// CapturedAt is when the media was actually taken/recorded, extracted
 	// from container metadata during processing. Nil when unknown.
 	CapturedAt *time.Time    `json:"captured_at,omitempty"`
