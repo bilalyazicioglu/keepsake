@@ -149,35 +149,38 @@ function Library({ user, onLogout }: { user: User; onLogout: () => void }) {
 
   // --- Data loading ------------------------------------------------------------
 
-  const load = useCallback(async () => {
+  // Bumped whenever the view changes, so responses for an older view (a
+  // slow request for the previous tab or search) are dropped on arrival.
+  const viewGen = useRef(0)
+
+  useEffect(() => {
+    const gen = ++viewGen.current
+    const current = () => gen === viewGen.current
     setLoading(true)
-    try {
-      if (viewRef.current.activeAlbum) {
-        const res = await getCollection(viewRef.current.activeAlbum.id)
-        setAlbumItems(res.items)
-      } else {
-        const res = await listMedia({
-          type: viewRef.current.filter,
-          favorite: viewRef.current.favOnly,
-          query: viewRef.current.query,
+    const request = activeAlbum
+      ? getCollection(activeAlbum.id).then((res) => {
+          if (current()) setAlbumItems(res.items)
+        })
+      : listMedia({
+          type: filter,
+          favorite: favOnly,
+          query,
           sort,
           ascending,
           limit: PAGE_SIZE,
           offset: 0,
+        }).then((res) => {
+          if (!current()) return
+          setItems(res.items)
+          setTotal(res.total)
         })
-        setItems(res.items)
-        setTotal(res.total)
-      }
-    } catch (err) {
-      toastError(err, "Failed to load library")
-    } finally {
-      setLoading(false)
-    }
-  }, [sort, ascending])
-
-  useEffect(() => {
-    void load()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    request
+      .catch((err: unknown) => {
+        if (current()) toastError(err, "Failed to load library")
+      })
+      .finally(() => {
+        if (current()) setLoading(false)
+      })
   }, [filter, favOnly, query, sort, ascending, activeAlbum])
 
   useEffect(() => {
@@ -187,6 +190,7 @@ function Library({ user, onLogout }: { user: User; onLogout: () => void }) {
   }, [])
 
   const loadMore = async () => {
+    const gen = viewGen.current
     setLoadingMore(true)
     try {
       const res = await listMedia({
@@ -198,6 +202,7 @@ function Library({ user, onLogout }: { user: User; onLogout: () => void }) {
         limit: PAGE_SIZE,
         offset: items.length,
       })
+      if (gen !== viewGen.current) return
       setItems((prev) => [...prev, ...res.items])
       setTotal(res.total)
     } catch (err) {
@@ -326,13 +331,12 @@ function Library({ user, onLogout }: { user: User; onLogout: () => void }) {
       // Pull the finished item (thumbnail, metadata, HLS path) and swap it in.
       getMedia(evt.media_id)
         .then((item) => {
-          setItems((prev) => {
-            const idx = prev.findIndex((i) => i.id === item.id)
-            if (idx === -1) return prev
-            const next = [...prev]
-            next[idx] = item
-            return next
-          })
+          const swap = (prev: MediaItem[]) =>
+            prev.some((i) => i.id === item.id)
+              ? prev.map((i) => (i.id === item.id ? item : i))
+              : prev
+          setItems(swap)
+          setAlbumItems(swap)
           setLive((prev) => {
             const next = { ...prev }
             delete next[evt.media_id]
@@ -348,11 +352,12 @@ function Library({ user, onLogout }: { user: User; onLogout: () => void }) {
           })
         })
     } else if (evt.status === "failed") {
-      setItems((prev) =>
+      const markFailed = (prev: MediaItem[]) =>
         prev.map((i) =>
           i.id === evt.media_id ? { ...i, status: "failed" as const } : i
         )
-      )
+      setItems(markFailed)
+      setAlbumItems(markFailed)
       toast.error(
         `Processing failed${evt.title ? `: ${evt.title}` : ""}`,
         evt.error ? { description: evt.error } : undefined
