@@ -1,4 +1,4 @@
-# Contributing to outofmatrix
+# Contributing to Keepsake
 
 Start with a reproducible bug or a concrete use case. Small fixes can go straight to a pull request; discuss larger changes in an issue first.
 

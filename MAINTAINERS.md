@@ -18,7 +18,7 @@ Use `bug`, `enhancement`, `documentation`, `help wanted`, `good first issue`, an
 
 Issue forms use the standard bug/enhancement labels; create them first if missing. Reserve `good first issue` for tasks with a clear expected result, relevant files, and a small scope. Do not apply it to security, migrations, or resumable upload correctness.
 
-The initial tracked work is [first-run setup](https://github.com/bilalyazicioglu/outofmatrix/issues/2), [baseline CI](https://github.com/bilalyazicioglu/outofmatrix/issues/3), and [a reproducible demo](https://github.com/bilalyazicioglu/outofmatrix/issues/4). CI checks are not required yet; enable them after the first workflows pass.
+The initial tracked work is [first-run setup](https://github.com/bilalyazicioglu/keepsake/issues/2), [baseline CI](https://github.com/bilalyazicioglu/keepsake/issues/3), and [a reproducible demo](https://github.com/bilalyazicioglu/keepsake/issues/4). CI checks are not required yet; enable them after the first workflows pass.
 
 ## Release readiness
 

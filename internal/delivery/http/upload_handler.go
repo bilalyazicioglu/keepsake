@@ -7,8 +7,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"outofmatrix/internal/domain"
-	"outofmatrix/internal/usecase"
+	"github.com/bilalyazicioglu/keepsake/internal/domain"
+	"github.com/bilalyazicioglu/keepsake/internal/usecase"
 )
 
 // UploadHandler exposes the resumable chunked upload API:

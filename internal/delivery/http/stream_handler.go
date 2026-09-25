@@ -12,8 +12,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"outofmatrix/internal/domain"
-	"outofmatrix/internal/usecase"
+	"github.com/bilalyazicioglu/keepsake/internal/domain"
+	"github.com/bilalyazicioglu/keepsake/internal/usecase"
 )
 
 // StreamHandler serves media bytes: adaptive HLS (master playlist, media

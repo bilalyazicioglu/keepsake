@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"outofmatrix/internal/domain"
-	"outofmatrix/internal/usecase"
+	"github.com/bilalyazicioglu/keepsake/internal/domain"
+	"github.com/bilalyazicioglu/keepsake/internal/usecase"
 )
 
 // AuthHandler exposes registration and login.

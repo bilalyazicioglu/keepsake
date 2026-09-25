@@ -11,7 +11,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"outofmatrix/internal/domain"
+	"github.com/bilalyazicioglu/keepsake/internal/domain"
 )
 
 // MediaRepository implements domain.MediaRepository on PostgreSQL using

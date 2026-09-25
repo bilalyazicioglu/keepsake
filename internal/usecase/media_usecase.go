@@ -15,9 +15,9 @@ import (
 	"github.com/buckket/go-blurhash"
 	"github.com/google/uuid"
 
-	"outofmatrix/internal/domain"
-	"outofmatrix/internal/worker"
-	"outofmatrix/pkg/ffmpeg"
+	"github.com/bilalyazicioglu/keepsake/internal/domain"
+	"github.com/bilalyazicioglu/keepsake/internal/worker"
+	"github.com/bilalyazicioglu/keepsake/pkg/ffmpeg"
 )
 
 // Storage layout under the storage root:

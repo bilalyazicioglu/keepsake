@@ -11,8 +11,8 @@ import (
 	chimw "github.com/go-chi/chi/v5/middleware"
 	"github.com/google/uuid"
 
-	"outofmatrix/internal/domain"
-	"outofmatrix/internal/usecase"
+	"github.com/bilalyazicioglu/keepsake/internal/domain"
+	"github.com/bilalyazicioglu/keepsake/internal/usecase"
 )
 
 type contextKey string

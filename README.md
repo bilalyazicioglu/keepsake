@@ -1,8 +1,8 @@
-# outofmatrix
+# Keepsake
 
 A home for your photos, music, and videos. Hosted by you.
 
-outofmatrix is a personal media library with a Go backend and a React interface. Upload your files, organize them into albums and playlists, and browse or play them from your browser.
+Keepsake is a personal media library with a Go backend and a React interface. Upload your files, organize them into albums and playlists, and browse or play them from your browser.
 
 ## Status
 
@@ -21,8 +21,8 @@ Early development. Expect changes to the API and deployment setup. Keep a separa
 Requires Docker with Compose and OpenSSL for generating a secret.
 
 ```sh
-git clone https://github.com/bilalyazicioglu/outofmatrix.git outofmatrix
-cd outofmatrix
+git clone https://github.com/bilalyazicioglu/keepsake.git keepsake
+cd keepsake
 cp .env.example .env
 openssl rand -hex 32
 ```
@@ -36,6 +36,8 @@ docker compose up --build -d
 Open **http://localhost:8080**, create an account, and upload a sample file.
 
 The current Compose file is a development setup: it publishes ports 8080 and 5432 and contains development database credentials. Review its bindings, credentials, and TLS setup before exposing an instance outside your machine.
+
+Previously named outofmatrix. Compose retains `outofmatrix` as its project name so the default volume names stay unchanged after the repository rename. Existing deployments using an explicit Compose project name should continue using that name.
 
 The `pgdata` volume holds the database and `mediadata` holds uploaded media. Back up both; do not remove these volumes when updating.
 

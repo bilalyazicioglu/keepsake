@@ -1,4 +1,4 @@
--- outofmatrix: self-hosted personal media cloud
+-- Keepsake: self-hosted personal media cloud
 -- PostgreSQL 14+ schema
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;

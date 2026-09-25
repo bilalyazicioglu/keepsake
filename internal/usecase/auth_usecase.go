@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 
-	"outofmatrix/internal/domain"
+	"github.com/bilalyazicioglu/keepsake/internal/domain"
 )
 
 // Claims is the JWT payload for authenticated sessions.

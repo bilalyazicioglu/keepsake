@@ -8,7 +8,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"outofmatrix/internal/domain"
+	"github.com/bilalyazicioglu/keepsake/internal/domain"
 )
 
 // CollectionUsecase manages playlists and albums with ownership enforcement.

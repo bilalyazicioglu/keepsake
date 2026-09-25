@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 
-	"outofmatrix/internal/usecase"
+	"github.com/bilalyazicioglu/keepsake/internal/usecase"
 )
 
 // Hub tracks connected clients grouped by user and broadcasts MediaEvents to

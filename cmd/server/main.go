@@ -1,4 +1,4 @@
-// Command server is the outofmatrix media cloud backend: a self-hosted
+// Command server is the Keepsake media cloud backend: a self-hosted
 // Google Photos + Spotify replacement in a single Go binary.
 package main
 
@@ -13,14 +13,14 @@ import (
 	"syscall"
 	"time"
 
-	"outofmatrix/internal/config"
-	deliveryhttp "outofmatrix/internal/delivery/http"
-	"outofmatrix/internal/delivery/ws"
-	"outofmatrix/internal/repository/postgres"
-	"outofmatrix/internal/usecase"
-	"outofmatrix/internal/worker"
-	"outofmatrix/migrations"
-	"outofmatrix/pkg/ffmpeg"
+	"github.com/bilalyazicioglu/keepsake/internal/config"
+	deliveryhttp "github.com/bilalyazicioglu/keepsake/internal/delivery/http"
+	"github.com/bilalyazicioglu/keepsake/internal/delivery/ws"
+	"github.com/bilalyazicioglu/keepsake/internal/repository/postgres"
+	"github.com/bilalyazicioglu/keepsake/internal/usecase"
+	"github.com/bilalyazicioglu/keepsake/internal/worker"
+	"github.com/bilalyazicioglu/keepsake/migrations"
+	"github.com/bilalyazicioglu/keepsake/pkg/ffmpeg"
 )
 
 func main() {

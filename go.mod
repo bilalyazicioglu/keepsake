@@ -1,4 +1,4 @@
-module outofmatrix
+module github.com/bilalyazicioglu/keepsake
 
 go 1.22
 

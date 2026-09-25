@@ -14,7 +14,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"outofmatrix/internal/domain"
+	"github.com/bilalyazicioglu/keepsake/internal/domain"
 )
 
 // Chunk size bounds. Clients may request their own chunk size within these
