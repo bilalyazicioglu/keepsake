@@ -1,12 +1,5 @@
 import { memo, useMemo, useState } from "react"
-import {
-  HeartIcon,
-  ImageIcon,
-  Loader2Icon,
-  MusicIcon,
-  PlayIcon,
-  TriangleAlertIcon,
-} from "lucide-react"
+import { HeartIcon, MusicIcon, PlayIcon, TriangleAlertIcon } from "lucide-react"
 
 import {
   formatDuration,
@@ -16,7 +9,6 @@ import {
 } from "@/lib/api"
 import { blurHashToDataURL } from "@/lib/blurhash"
 import { cn } from "@/lib/utils"
-import { Badge } from "@/components/ui/badge"
 
 interface MediaCardProps {
   item: MediaItem
@@ -26,23 +18,17 @@ interface MediaCardProps {
   onToggleFavorite: (item: MediaItem) => void
 }
 
-const typeIcon = {
-  photo: ImageIcon,
-  video: PlayIcon,
-  audio: MusicIcon,
-} as const
-
 function stageLabel(evt?: MediaEvent): string {
-  if (!evt) return "Queued"
+  if (!evt) return "Waiting to process"
   switch (evt.stage) {
     case "probe":
-      return "Analyzing"
+      return "Reading file"
     case "thumbnail":
-      return "Thumbnail"
+      return "Making preview"
     case "transcode":
-      return "Transcoding"
+      return "Preparing for streaming"
     default:
-      return evt.status === "queued" ? "Queued" : "Processing"
+      return evt.status === "queued" ? "Waiting to process" : "Processing"
   }
 }
 
@@ -63,140 +49,129 @@ export const MediaCard = memo(function MediaCard({
   const failed = item.status === "failed" || live?.status === "failed"
   const ready = item.status === "ready"
   const hasThumb = ready && !!item.thumbnail_path
-  const Icon = typeIcon[item.type]
+  const isAudio = item.type === "audio"
   const duration =
     item.type === "photo" ? "" : formatDuration(item.metadata?.duration_seconds)
   const progress = live ? Math.max(0, Math.min(100, live.progress)) : 0
 
   return (
     <div
-      role="button"
-      tabIndex={ready ? 0 : -1}
-      aria-label={item.title}
-      onClick={() => ready && onOpen(item)}
-      onKeyDown={(e) => {
-        if (ready && (e.key === "Enter" || e.key === " ")) {
-          e.preventDefault()
-          onOpen(item)
-        }
-      }}
       className={cn(
-        "media-cell group relative aspect-square w-full overflow-hidden rounded-xl",
-        "border border-white/[0.06] bg-secondary/40 text-left",
-        "transition-all duration-300 ease-out",
-        ready &&
-          "cursor-pointer hover:-translate-y-1 hover:border-white/15 hover:shadow-xl hover:shadow-violet-950/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+        "media-cell group relative aspect-square overflow-hidden rounded-md bg-muted",
+        ready && "focus-within:ring-2 focus-within:ring-ring"
       )}
     >
-      {/* BlurHash placeholder — shown instantly, sits behind the real thumb */}
-      {placeholder && (
-        <img
-          src={placeholder}
-          alt=""
-          aria-hidden
-          className="absolute inset-0 h-full w-full scale-110 object-cover"
-        />
-      )}
+      <button
+        type="button"
+        disabled={!ready}
+        onClick={() => onOpen(item)}
+        aria-label={`Open ${item.title}`}
+        className="absolute inset-0 cursor-pointer focus:outline-none disabled:cursor-default"
+      >
+        {placeholder && (
+          <img
+            src={placeholder}
+            alt=""
+            aria-hidden
+            className="absolute inset-0 h-full w-full scale-110 object-cover"
+          />
+        )}
 
-      {hasThumb ? (
-        <img
-          src={thumbUrl(item.id)}
-          alt={item.title}
-          loading="lazy"
-          decoding="async"
-          onLoad={() => setThumbLoaded(true)}
-          className={cn(
-            "absolute inset-0 h-full w-full object-cover transition-[opacity,transform] duration-500",
-            thumbLoaded ? "opacity-100" : "opacity-0",
-            "group-hover:scale-[1.04]"
-          )}
-        />
-      ) : (
-        !placeholder && (
-          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-violet-950/60 via-secondary to-fuchsia-950/40">
-            <Icon className="size-10 text-white/20" />
-          </div>
-        )
-      )}
+        {hasThumb && (
+          <img
+            src={thumbUrl(item.id)}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            onLoad={() => setThumbLoaded(true)}
+            className={cn(
+              "absolute inset-0 h-full w-full object-cover transition-opacity duration-300",
+              thumbLoaded ? "opacity-100" : "opacity-0"
+            )}
+          />
+        )}
 
-      {/* Bottom gradient with title */}
-      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent p-3 pt-10">
-        <p className="truncate text-sm font-medium text-white/95">
-          {item.title}
-        </p>
-        <div className="mt-1 flex items-center gap-1.5 text-[11px] text-white/60">
-          <Icon className="size-3" />
-          <span className="capitalize">{item.type}</span>
-          {duration && (
-            <>
-              <span aria-hidden>·</span>
-              <span>{duration}</span>
-            </>
-          )}
-        </div>
+        {isAudio && !hasThumb && (
+          <span className="absolute inset-0 flex items-center justify-center bg-secondary">
+            <MusicIcon className="size-9 text-muted-foreground/60" />
+          </span>
+        )}
+      </button>
+
+      {/* Audio has no picture to recognise, so its title stays visible. */}
+      <div
+        className={cn(
+          "pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-2.5 pt-8 pb-2 transition-opacity",
+          isAudio
+            ? "opacity-100"
+            : "opacity-0 group-focus-within:opacity-100 group-hover:opacity-100"
+        )}
+      >
+        <p className="truncate text-[13px] font-medium text-white">{item.title}</p>
       </div>
 
-      {/* Favorite toggle: always visible when favorited, on hover otherwise */}
+      {ready && item.type === "video" && (
+        <span className="pointer-events-none absolute top-2 right-2 flex items-center gap-1 rounded bg-black/65 px-1.5 py-0.5 text-[11px] font-medium text-white tabular-nums">
+          <PlayIcon className="size-2.5 fill-current" />
+          {duration}
+        </span>
+      )}
+      {ready && isAudio && duration && (
+        <span className="pointer-events-none absolute top-2 right-2 rounded bg-black/65 px-1.5 py-0.5 text-[11px] font-medium text-white tabular-nums">
+          {duration}
+        </span>
+      )}
+
       {ready && (
         <button
           type="button"
-          aria-label={item.is_favorite ? "Remove from favorites" : "Add to favorites"}
+          aria-label={item.is_favorite ? `Remove ${item.title} from favorites` : `Add ${item.title} to favorites`}
           aria-pressed={item.is_favorite}
-          onClick={(e) => {
-            e.stopPropagation()
-            onToggleFavorite(item)
-          }}
+          onClick={() => onToggleFavorite(item)}
           className={cn(
-            "absolute top-2 left-2 z-10 flex size-7 items-center justify-center rounded-full",
-            "bg-black/50 backdrop-blur-sm transition-all duration-200",
-            "hover:scale-110 hover:bg-black/70 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+            "absolute top-1.5 left-1.5 flex size-8 items-center justify-center rounded-full transition-opacity",
+            "focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
             item.is_favorite
               ? "opacity-100"
-              : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+              : "opacity-0 group-focus-within:opacity-100 group-hover:opacity-100"
           )}
         >
           <HeartIcon
             className={cn(
-              "size-4 transition-colors",
-              item.is_favorite ? "fill-rose-500 text-rose-500" : "text-white/80"
+              "size-[18px] drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]",
+              item.is_favorite ? "fill-primary text-primary" : "text-white"
             )}
           />
         </button>
       )}
 
-      {/* Type chip */}
-      <Badge
-        variant="secondary"
-        className="absolute top-2 right-2 border-white/10 bg-black/50 text-white/80 backdrop-blur-sm"
-      >
-        <Icon className="size-3" />
-      </Badge>
-
-      {/* Processing veil with live progress */}
       {processing && !failed && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/70 backdrop-blur-[2px]">
-          <Loader2Icon className="size-6 animate-spin text-violet-300" />
-          <div className="flex flex-col items-center gap-1.5">
-            <span className="text-xs font-medium text-white/90">
-              {stageLabel(live)}
-              {live && live.progress > 0 && ` ${Math.round(progress)}%`}
-            </span>
-            <div className="h-1 w-28 overflow-hidden rounded-full bg-white/15">
+        <div className="absolute inset-0 flex flex-col justify-end gap-2 bg-black/70 p-3">
+          <span className="text-xs text-white/85">
+            {stageLabel(live)}
+            {live && live.progress > 0 && (
+              <span className="text-white/55 tabular-nums"> {Math.round(progress)}%</span>
+            )}
+          </span>
+          <div className="h-1 overflow-hidden rounded-full bg-white/15">
+            {live && live.progress > 0 ? (
               <div
-                className="shimmer h-full rounded-full bg-gradient-to-r from-violet-400 to-fuchsia-400 transition-[width] duration-300"
-                style={{ width: `${Math.max(progress, 4)}%` }}
+                className="bg-ember-ramp h-full rounded-full transition-[width] duration-300"
+                style={{ width: `${progress}%` }}
               />
-            </div>
+            ) : (
+              <div className="bg-ember-ramp animate-indeterminate h-full w-2/5 rounded-full" />
+            )}
           </div>
+          <p className="truncate text-[13px] font-medium text-white">{item.title}</p>
         </div>
       )}
 
       {failed && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/75">
-          <TriangleAlertIcon className="size-6 text-red-400" />
-          <span className="px-4 text-center text-xs text-red-300">
-            Processing failed
-          </span>
+        <div className="absolute inset-0 flex flex-col justify-end gap-1 bg-black/75 p-3">
+          <TriangleAlertIcon className="size-4 text-destructive" />
+          <p className="text-xs text-white/85">Couldn't process this file</p>
+          <p className="truncate text-[13px] font-medium text-white">{item.title}</p>
         </div>
       )}
     </div>

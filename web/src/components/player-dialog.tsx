@@ -98,7 +98,7 @@ function useHls(item: MediaItem | null) {
         instance.attachMedia(video)
         instance.on(Hls.Events.ERROR, (_evt, data) => {
           if (data.fatal) {
-            toast.error(`Playback error: ${data.type}`)
+            toast.error("This video stopped loading. Close it and open it again to retry.")
             instance.destroy()
           }
         })
@@ -106,7 +106,7 @@ function useHls(item: MediaItem | null) {
       } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
         video.src = src
       } else {
-        toast.error("This browser cannot play HLS video")
+        toast.error("This browser can't play streamed video. Download the file to watch it.")
       }
     })
 
@@ -177,11 +177,11 @@ export function PlayerDialog({
     if (!item) return
     try {
       await addToCollection(album.id, item.id)
-      toast.success(`Added to "${album.name}"`)
+      toast.success(`Added to ${album.name}`)
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed"
       if (msg.includes("exists")) {
-        toast.info(`Already in "${album.name}"`)
+        toast.info(`Already in ${album.name}`)
       } else {
         toast.error(msg)
       }
@@ -197,7 +197,7 @@ export function PlayerDialog({
     setDeleting(true)
     try {
       await deleteMedia(item.id)
-      toast.success(`Deleted "${item.title}"`)
+      toast.success(`Deleted ${item.title}`)
       onDeleted(item.id)
       onClose()
     } catch (err) {
@@ -211,7 +211,7 @@ export function PlayerDialog({
   return (
     <Dialog open={!!item} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
-        className="max-w-4xl gap-0 overflow-hidden border-white/10 bg-[oklch(0.14_0.03_283)] p-0 sm:max-w-4xl"
+        className="max-w-4xl gap-0 overflow-hidden border-border bg-card p-0 sm:max-w-4xl"
         onKeyDown={(e) => {
           if (renaming) return
           if (e.key === "ArrowLeft" && onPrev) {
@@ -229,7 +229,7 @@ export function PlayerDialog({
               {item.type === "video" && (
                 <>
                   {loading && (
-                    <Loader2Icon className="absolute size-8 animate-spin text-violet-300" />
+                    <Loader2Icon className="absolute size-8 animate-spin text-muted-foreground" />
                   )}
                   <video
                     ref={videoRef}
@@ -257,11 +257,11 @@ export function PlayerDialog({
                     <img
                       src={thumbUrl(item.id)}
                       alt=""
-                      className="size-44 rounded-2xl object-cover shadow-2xl shadow-violet-950/50"
+                      className="size-44 rounded-lg object-cover shadow-2xl shadow-black/60"
                     />
                   ) : (
-                    <div className="flex size-44 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600/40 to-fuchsia-600/30">
-                      <MusicIcon className="size-16 text-white/40" />
+                    <div className="flex size-44 items-center justify-center rounded-lg bg-secondary">
+                      <MusicIcon className="size-16 text-muted-foreground/60" />
                     </div>
                   )}
                   <audio
@@ -373,7 +373,7 @@ export function PlayerDialog({
               </div>
             </DialogHeader>
 
-            <Separator className="mt-5 bg-white/[0.06]" />
+            <Separator className="mt-5 bg-border" />
 
             <DialogFooter className="flex-row items-center justify-between gap-2 px-6 py-4 sm:justify-between">
               <span className="hidden text-xs text-muted-foreground sm:inline">
@@ -390,7 +390,7 @@ export function PlayerDialog({
                   <HeartIcon
                     className={cn(
                       "size-4",
-                      item.is_favorite && "fill-rose-500 text-rose-500"
+                      item.is_favorite && "fill-primary text-primary"
                     )}
                   />
                   <span className="hidden sm:inline">
@@ -402,14 +402,14 @@ export function PlayerDialog({
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="sm">
                       <FolderPlusIcon className="size-4" />
-                      <span className="hidden sm:inline">Album</span>
+                      <span className="hidden sm:inline">Add to album</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-52">
                     <DropdownMenuLabel>Add to album</DropdownMenuLabel>
                     {albums.length === 0 && (
                       <DropdownMenuItem disabled>
-                        No albums yet — create one below the upload zone
+                        No albums yet. Create one from the sidebar.
                       </DropdownMenuItem>
                     )}
                     {albums.map((album) => (
@@ -430,7 +430,7 @@ export function PlayerDialog({
                         >
                           <FolderMinusIcon className="size-4" />
                           <span className="truncate">
-                            Remove from “{activeAlbum.name}”
+                            Remove from {activeAlbum.name}
                           </span>
                         </DropdownMenuItem>
                       </>
@@ -457,7 +457,7 @@ export function PlayerDialog({
                   ) : (
                     <Trash2Icon className="size-4" />
                   )}
-                  {confirming ? "Really delete?" : "Delete"}
+                  {confirming ? "Delete for good" : "Delete"}
                 </Button>
               </div>
             </DialogFooter>

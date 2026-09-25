@@ -1,10 +1,9 @@
-import { useCallback, useRef, useState, type DragEvent } from "react"
-import { CloudUploadIcon, FileIcon, Loader2Icon, XIcon } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
+import { UploadIcon, XIcon } from "lucide-react"
 
 import { formatBytes } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
 
 export interface ActiveUpload {
   key: string
@@ -16,144 +15,157 @@ export interface ActiveUpload {
   abort: () => void
 }
 
-interface UploadZoneProps {
-  uploads: ActiveUpload[]
-  onFiles: (files: File[]) => void
-  onDismiss: (key: string) => void
+const ACCEPT = "image/*,video/*,audio/*"
+
+/** Toolbar button that opens the file picker. */
+export function UploadButton({ onFiles }: { onFiles: (files: File[]) => void }) {
+  const inputRef = useRef<HTMLInputElement | null>(null)
+  return (
+    <>
+      <Button onClick={() => inputRef.current?.click()} className="h-9">
+        <UploadIcon className="size-4" />
+        Upload
+      </Button>
+      <input
+        ref={inputRef}
+        type="file"
+        multiple
+        accept={ACCEPT}
+        className="hidden"
+        onChange={(e) => {
+          const files = Array.from(e.target.files ?? [])
+          if (files.length) onFiles(files)
+          e.target.value = ""
+        }}
+      />
+    </>
+  )
 }
 
-export function UploadZone({ uploads, onFiles, onDismiss }: UploadZoneProps) {
+/**
+ * Makes the whole window a drop target. The overlay appears only while files
+ * are dragged over the page, so the library itself never gives up space to an
+ * upload box.
+ */
+export function WindowDropTarget({ onFiles }: { onFiles: (files: File[]) => void }) {
   const [dragging, setDragging] = useState(false)
-  const inputRef = useRef<HTMLInputElement | null>(null)
-  const dragDepth = useRef(0)
+  const depth = useRef(0)
 
-  const handleDrop = useCallback(
-    (e: DragEvent) => {
+  useEffect(() => {
+    const hasFiles = (e: DragEvent) =>
+      Array.from(e.dataTransfer?.types ?? []).includes("Files")
+
+    const enter = (e: DragEvent) => {
+      if (!hasFiles(e)) return
       e.preventDefault()
-      dragDepth.current = 0
+      depth.current++
+      setDragging(true)
+    }
+    const leave = (e: DragEvent) => {
+      if (!hasFiles(e)) return
+      if (--depth.current <= 0) {
+        depth.current = 0
+        setDragging(false)
+      }
+    }
+    const over = (e: DragEvent) => {
+      if (hasFiles(e)) e.preventDefault()
+    }
+    const drop = (e: DragEvent) => {
+      if (!hasFiles(e)) return
+      e.preventDefault()
+      depth.current = 0
       setDragging(false)
-      const files = Array.from(e.dataTransfer.files)
+      const files = Array.from(e.dataTransfer?.files ?? [])
       if (files.length) onFiles(files)
-    },
-    [onFiles]
-  )
+    }
 
+    window.addEventListener("dragenter", enter)
+    window.addEventListener("dragleave", leave)
+    window.addEventListener("dragover", over)
+    window.addEventListener("drop", drop)
+    return () => {
+      window.removeEventListener("dragenter", enter)
+      window.removeEventListener("dragleave", leave)
+      window.removeEventListener("dragover", over)
+      window.removeEventListener("drop", drop)
+    }
+  }, [onFiles])
+
+  if (!dragging) return null
   return (
-    <section className="grid gap-3">
-      <div
-        role="button"
-        tabIndex={0}
-        aria-label="Upload media"
-        onClick={() => inputRef.current?.click()}
-        onKeyDown={(e) => e.key === "Enter" && inputRef.current?.click()}
-        onDragEnter={(e) => {
-          e.preventDefault()
-          dragDepth.current++
-          setDragging(true)
-        }}
-        onDragLeave={(e) => {
-          e.preventDefault()
-          if (--dragDepth.current <= 0) {
-            dragDepth.current = 0
-            setDragging(false)
-          }
-        }}
-        onDragOver={(e) => e.preventDefault()}
-        onDrop={handleDrop}
-        className={cn(
-          "group relative flex cursor-pointer flex-col items-center justify-center gap-2",
-          "rounded-2xl border border-dashed px-6 py-10 text-center",
-          "transition-all duration-300",
-          dragging
-            ? "scale-[1.01] border-violet-400/70 bg-violet-500/10 shadow-lg shadow-violet-500/10"
-            : "border-white/15 bg-white/[0.02] hover:border-violet-400/40 hover:bg-white/[0.04]"
-        )}
-      >
-        <div
-          className={cn(
-            "flex size-12 items-center justify-center rounded-xl transition-all duration-300",
-            "bg-gradient-to-br from-violet-500/25 to-fuchsia-500/20",
-            dragging
-              ? "scale-110 from-violet-500/50 to-fuchsia-500/40"
-              : "group-hover:scale-105"
-          )}
-        >
-          <CloudUploadIcon
-            className={cn(
-              "size-6 transition-colors",
-              dragging ? "text-violet-200" : "text-violet-300/80"
-            )}
-          />
-        </div>
-        <p className="text-sm font-medium">
-          {dragging ? "Drop to upload" : "Drag & drop photos, music or video"}
+    <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-canvas/85 p-6">
+      <div className="flex h-full w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-ember/70 text-center">
+        <UploadIcon className="size-8 text-ember" />
+        <p className="font-heading text-2xl font-bold">Drop to add to your library</p>
+        <p className="text-sm text-muted-foreground">
+          Photos, videos and music. Large files upload in parts and resume if interrupted.
         </p>
-        <p className="text-xs text-muted-foreground">
-          or click to browse — large files upload in resumable chunks
-        </p>
-        <input
-          ref={inputRef}
-          type="file"
-          multiple
-          accept="image/*,video/*,audio/*"
-          className="hidden"
-          onChange={(e) => {
-            const files = Array.from(e.target.files ?? [])
-            if (files.length) onFiles(files)
-            e.target.value = ""
-          }}
-        />
       </div>
+    </div>
+  )
+}
 
-      {uploads.length > 0 && (
-        <div className="grid gap-2">
-          {uploads.map((u) => (
-            <div
-              key={u.key}
-              className="animate-fade-up flex items-center gap-3 rounded-xl border border-white/[0.06] bg-card/60 px-4 py-3 backdrop-blur-sm"
-            >
-              <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-violet-500/15">
-                {u.error ? (
-                  <FileIcon className="size-4 text-red-400" />
-                ) : u.percent >= 100 ? (
-                  <Loader2Icon className="size-4 animate-spin text-violet-300" />
-                ) : (
-                  <FileIcon className="size-4 text-violet-300" />
-                )}
+/** Bottom-right stack of in-flight and failed uploads. */
+export function UploadTray({
+  uploads,
+  onDismiss,
+}: {
+  uploads: ActiveUpload[]
+  onDismiss: (key: string) => void
+}) {
+  if (uploads.length === 0) return null
+  return (
+    <section
+      aria-label="Uploads"
+      className="fixed right-4 bottom-4 left-4 z-40 max-h-72 overflow-y-auto rounded-lg border border-border bg-popover shadow-2xl shadow-black/50 sm:left-auto sm:w-80"
+    >
+      <h2 className="sticky top-0 border-b border-border bg-popover px-4 py-2.5 text-sm font-medium">
+        Uploading {uploads.length} {uploads.length === 1 ? "file" : "files"}
+      </h2>
+      <ul className="divide-y divide-border">
+        {uploads.map((u) => (
+          <li key={u.key} className="flex items-center gap-3 px-4 py-3">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-baseline justify-between gap-3">
+                <p className="truncate text-sm">{u.name}</p>
+                <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
+                  {u.error
+                    ? "Failed"
+                    : u.percent >= 100
+                      ? "Finishing"
+                      : `${formatBytes(u.sentBytes)} of ${formatBytes(u.size)}`}
+                </span>
               </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-baseline justify-between gap-3">
-                  <p className="truncate text-sm font-medium">{u.name}</p>
-                  <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-                    {u.error
-                      ? "failed"
-                      : u.percent >= 100
-                        ? "finalizing…"
-                        : `${formatBytes(u.sentBytes)} / ${formatBytes(u.size)}`}
-                  </span>
+              {u.error ? (
+                <p className="mt-1 truncate text-xs text-destructive">{u.error}</p>
+              ) : (
+                <div className="mt-2 h-1 overflow-hidden rounded-full bg-secondary">
+                  <div
+                    className={cn(
+                      "bg-ember-ramp h-full rounded-full transition-[width] duration-300",
+                      u.percent >= 100 && "animate-pulse"
+                    )}
+                    style={{ width: `${Math.max(u.percent, 2)}%` }}
+                  />
                 </div>
-                {u.error ? (
-                  <p className="mt-1 truncate text-xs text-red-400">{u.error}</p>
-                ) : (
-                  <Progress value={u.percent} className="mt-2 h-1.5" />
-                )}
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-7 shrink-0"
-                aria-label={u.error ? "Dismiss" : "Cancel upload"}
-                onClick={() => {
-                  u.abort()
-                  onDismiss(u.key)
-                }}
-              >
-                <XIcon className="size-4" />
-              </Button>
+              )}
             </div>
-          ))}
-        </div>
-      )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-7 shrink-0"
+              aria-label={u.error ? `Dismiss ${u.name}` : `Cancel ${u.name}`}
+              onClick={() => {
+                u.abort()
+                onDismiss(u.key)
+              }}
+            >
+              <XIcon className="size-4" />
+            </Button>
+          </li>
+        ))}
+      </ul>
     </section>
   )
 }
