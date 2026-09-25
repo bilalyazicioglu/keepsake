@@ -6,8 +6,8 @@ import (
 	"log/slog"
 	"net/http"
 
-	"outofmatrix/internal/domain"
-	"outofmatrix/internal/worker"
+	"github.com/bilalyazicioglu/keepsake/internal/domain"
+	"github.com/bilalyazicioglu/keepsake/internal/worker"
 )
 
 type errorBody struct {

@@ -10,9 +10,9 @@ import (
 	"github.com/go-chi/chi/v5"
 	chimw "github.com/go-chi/chi/v5/middleware"
 
-	"outofmatrix/internal/delivery/ws"
-	"outofmatrix/internal/domain"
-	"outofmatrix/internal/usecase"
+	"github.com/bilalyazicioglu/keepsake/internal/delivery/ws"
+	"github.com/bilalyazicioglu/keepsake/internal/domain"
+	"github.com/bilalyazicioglu/keepsake/internal/usecase"
 )
 
 // RouterDeps carries everything the router needs, so main.go stays a pure

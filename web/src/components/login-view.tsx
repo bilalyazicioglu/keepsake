@@ -55,7 +55,7 @@ export function LoginView({ onLogin }: LoginViewProps) {
             <PlayIcon className="size-7 fill-white text-white" />
           </div>
           <h1 className="text-gradient text-3xl font-semibold tracking-tight">
-            outofmatrix
+            Keepsake
           </h1>
           <p className="text-sm text-muted-foreground">
             Your photos, music and video — on your own hardware.

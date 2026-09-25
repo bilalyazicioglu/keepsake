@@ -1,4 +1,4 @@
-// Typed client for the outofmatrix Go backend.
+// Typed client for the Keepsake Go backend.
 
 export type MediaType = "photo" | "video" | "audio"
 export type MediaStatus = "pending" | "processing" | "ready" | "failed"

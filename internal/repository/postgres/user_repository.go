@@ -10,7 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"outofmatrix/internal/domain"
+	"github.com/bilalyazicioglu/keepsake/internal/domain"
 )
 
 // UserRepository implements domain.UserRepository on PostgreSQL.

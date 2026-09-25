@@ -3,7 +3,7 @@ package usecase
 import (
 	"github.com/google/uuid"
 
-	"outofmatrix/internal/domain"
+	"github.com/bilalyazicioglu/keepsake/internal/domain"
 )
 
 // Media lifecycle statuses pushed over WebSocket.

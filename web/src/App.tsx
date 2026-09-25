@@ -462,7 +462,7 @@ function Library({ user, onLogout }: { user: User; onLogout: () => void }) {
               <PlayIcon className="size-4 fill-white text-white" />
             </div>
             <span className="text-gradient text-lg font-semibold tracking-tight">
-              outofmatrix
+              Keepsake
             </span>
           </div>
 
