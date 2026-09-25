@@ -109,6 +109,23 @@ export function clearSession(): void {
   localStorage.removeItem(USER_KEY)
 }
 
+const unauthorizedListeners = new Set<() => void>()
+
+/**
+ * Subscribes to session expiry: fired when a request made with a stored token
+ * is rejected with 401. The session has already been cleared by then.
+ * Returns an unsubscribe function.
+ */
+export function onUnauthorized(listener: () => void): () => void {
+  unauthorizedListeners.add(listener)
+  return () => unauthorizedListeners.delete(listener)
+}
+
+function expireSession(): void {
+  clearSession()
+  for (const listener of unauthorizedListeners) listener()
+}
+
 export class ApiError extends Error {
   readonly status: number
 
@@ -127,6 +144,9 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   }
 
   const res = await fetch(BASE + path, { ...init, headers })
+  // A 401 on a request that carried a token means the session is gone; a 401
+  // without one is just a failed sign-in.
+  if (res.status === 401 && token) expireSession()
   if (res.status === 204) return undefined as T
 
   const text = await res.text()

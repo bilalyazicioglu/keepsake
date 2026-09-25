@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react"
 import { Loader2Icon, PlayIcon } from "lucide-react"
 import { toast } from "sonner"
 
-import { login, register, storeSession, type User } from "@/lib/api"
+import { ApiError, login, register, storeSession, type User } from "@/lib/api"
 import { Aurora } from "@/components/aurora"
 import { Button } from "@/components/ui/button"
 import {
@@ -39,7 +39,12 @@ export function LoginView({ onLogin }: LoginViewProps) {
       storeSession(res.token, res.user)
       onLogin(res.user)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Something went wrong")
+      // The API answers a bad sign-in with a bare "unauthorized".
+      if (err instanceof ApiError && err.status === 401) {
+        toast.error("Incorrect username or password")
+      } else {
+        toast.error(err instanceof Error ? err.message : "Something went wrong")
+      }
     } finally {
       setBusy(false)
     }
