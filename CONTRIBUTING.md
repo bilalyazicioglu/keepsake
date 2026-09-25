@@ -14,9 +14,12 @@ Follow existing formatting and naming conventions. Avoid unrelated refactors and
 
 ## Local checks
 
+CI runs these on every pull request. Run them locally first.
+
 Backend:
 
 ```sh
+gofmt -l .
 go test ./...
 go vet ./...
 go build ./cmd/server
@@ -30,12 +33,12 @@ npm run lint
 npm run build
 ```
 
-Use `npm ci` instead of `npm install` when the committed lockfile has been verified. A successful test command with no test files is not regression coverage. The current frontend package does not define `npm test`; do not report a nonexistent suite as passing.
+Use Node 22 and `npm ci` to install exactly what the lockfile pins. A successful test command with no test files is not regression coverage. The current frontend package does not define `npm test`; do not report a nonexistent suite as passing.
 
 For upload or playback changes, also exercise the flow with a small non-sensitive sample file and describe the environment. Do not attach personal media or credentials to reports.
 
 ## Review and merge
 
-The maintainer reviews external contributions. Pull requests merge into `main`, normally by squash merge, and merged branches can be removed. Required checks must refer to CI jobs that actually exist and pass.
+The maintainer reviews external contributions. Pull requests merge into `main` by squash merge, so the pull request title becomes the commit message: make it describe the change. The Backend, Frontend and Docker image checks must pass.
 
-Be respectful and keep feedback about the work. Unclear reports are welcome; we can narrow them down together.
+Follow the [code of conduct](CODE_OF_CONDUCT.md) and keep feedback about the work. Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md). Unclear reports are welcome; we can narrow them down together.
