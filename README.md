@@ -1,120 +1,91 @@
 # outofmatrix
 
-A self-hosted personal media cloud — Google Photos + Spotify functionality in a
-single Go binary. Upload photos, music and video; the server extracts metadata
-with ffprobe, generates thumbnails and BlurHash placeholders, and segments
-videos into HLS for adaptive streaming.
+A home for your photos, music, and videos. Hosted by you.
 
-## Architecture
+outofmatrix is a personal media library with a Go backend and a React interface. Upload your files, organize them into albums and playlists, and browse or play them from your browser.
 
-Clean / hexagonal architecture:
+## Status
 
-```
-cmd/server/            composition root (wiring, lifecycle, graceful shutdown)
-internal/domain/       entities + repository ports (no external deps)
-internal/usecase/      business logic (auth, media pipeline, collections)
-internal/repository/   PostgreSQL adapters (pgx/v5, plain SQL)
-internal/delivery/http chi router, handlers, middleware
-internal/worker/       bounded worker pool (channel-based job queue)
-pkg/ffmpeg/            standalone ffmpeg/ffprobe wrapper
-migrations/            SQL schema
-web/                   frontend source (Vite + React + TypeScript + shadcn/ui)
-static/                built frontend assets, served by the Go binary (generated)
-```
+Early development. Expect changes to the API and deployment setup. Keep a separate backup of original media.
 
-The media pipeline: chunked resumable upload → chunks written at their exact
-offset into a sparse staging file (constant RAM, any file size) → row saved as
-`pending` → job queued into the bounded worker pool → worker probes with
-ffprobe, generates a thumbnail + BlurHash, and for video an adaptive
-multi-bitrate HLS set (1080p + 720p, `h264_videotoolbox` on macOS with
-automatic `libx264` fallback) → status `ready`. Every step streams progress
-events over WebSocket (`/api/v1/ws`), parsed live from FFmpeg's
-`-progress pipe:1` output. Unfinished jobs are recovered at boot, and the
-binary migrates its own database schema on startup.
+## What it does
 
-## Run with Docker (recommended)
+- Uploads media in resumable chunks.
+- Extracts media metadata and generates thumbnails and BlurHash placeholders.
+- Processes video into HLS renditions for browser playback.
+- Organizes media with albums, playlists, favorites, and title search.
+- Reports upload and processing progress in the interface.
+
+## Try it locally
+
+Requires Docker with Compose and OpenSSL for generating a secret.
 
 ```sh
-JWT_SECRET=$(openssl rand -hex 32) docker compose up --build -d
+git clone https://github.com/bilalyazicioglu/outofmatrix.git outofmatrix
+cd outofmatrix
+cp .env.example .env
+openssl rand -hex 32
 ```
 
-Open http://localhost:8080 — register an account, upload media, play it.
-The schema in `migrations/` is applied automatically on the first boot of a
-fresh database volume.
-
-## Frontend
-
-The UI in `web/` is a Vite + React + TypeScript app built on shadcn/ui
-(Radix primitives, Tailwind CSS v4, self-hosted Geist font): drag-and-drop
-resumable uploads with live per-byte progress, WebSocket-driven processing
-overlays on each card, BlurHash placeholders decoded client-side, favorites,
-albums for filing media, title search, sorting (date added / date taken /
-name, both directions), inline rename, original download, prev/next
-navigation in the player, and an hls.js player that is lazy-loaded only when
-the first video is opened — everything else ships as one ~120 KB gzipped
-bundle. The capture date comes from container metadata (`creation_time` and
-friends) extracted by ffprobe into the `captured_at` column. `npm run build` emits
-hashed assets into `static/`, which the Go server serves with
-`immutable` cache headers (and `no-cache` for `index.html`).
-
-## Run locally
-
-Requires Go 1.22+, Node 20+, PostgreSQL and ffmpeg/ffprobe on PATH.
+Set `JWT_SECRET` in `.env` to the generated value, and keep that value across restarts. Review the other configuration values, then start the stack:
 
 ```sh
-make db-up                 # start Postgres in Docker (schema auto-applied)
-cp .env.example .env       # adjust if needed; export the variables
-make web                   # build the frontend into static/
+docker compose up --build -d
+```
+
+Open **http://localhost:8080**, create an account, and upload a sample file.
+
+The current Compose file is a development setup: it publishes ports 8080 and 5432 and contains development database credentials. Review its bindings, credentials, and TLS setup before exposing an instance outside your machine.
+
+The `pgdata` volume holds the database and `mediadata` holds uploaded media. Back up both; do not remove these volumes when updating.
+
+## Development
+
+Use the Go version declared in `go.mod` and a Node version supported by the frontend's installed Vite version. Local backend development also needs PostgreSQL and FFmpeg/ffprobe.
+
+```sh
+make db-up
+make web
+```
+
+Configure and export the environment variables from `.env.example` for a locally running server, then:
+
+```sh
 make run
 ```
 
-For frontend work, `make web-dev` starts Vite on :5173 with hot reload,
-proxying `/api` (including the WebSocket) to the Go server on :8080.
+For frontend work, use `make web-dev` in another terminal. The Vite development server proxies API requests to the Go server.
 
-## API
+## How it fits together
 
-| Method | Path                                        | Description                              |
-|--------|---------------------------------------------|------------------------------------------|
-| POST   | `/api/v1/auth/register`                     | `{username, password}`                   |
-| POST   | `/api/v1/auth/login`                        | → `{token, user}` (JWT, HS256)           |
-| GET    | `/api/v1/ws`                                | WebSocket: live processing events        |
-| POST   | `/api/v1/uploads`                           | open resumable session `{filename,size}` |
-| GET    | `/api/v1/uploads/{id}`                      | received chunk indexes (resume)          |
-| PUT    | `/api/v1/uploads/{id}/chunks/{index}`       | raw chunk bytes at exact file offset     |
-| POST   | `/api/v1/uploads/{id}/complete`             | assemble → MediaItem → queue processing  |
-| DELETE | `/api/v1/uploads/{id}`                      | abort session                            |
-| POST   | `/api/v1/media/upload`                      | legacy single-request multipart upload   |
-| GET    | `/api/v1/media?type=&favorite=&q=&sort=&order=&limit=&offset=` | paginated library: filter by type/favorites, search titles, sort by `added` \| `name` \| `captured` |
-| GET    | `/api/v1/media/{id}`                        | one item incl. extracted metadata        |
-| PATCH  | `/api/v1/media/{id}`                        | `{title?, is_favorite?}` rename/favorite |
-| DELETE | `/api/v1/media/{id}`                        | row + original + derivatives             |
-| GET    | `/api/v1/media/stream/{id}/master.m3u8`     | adaptive HLS master playlist             |
-| GET    | `/api/v1/media/stream/{id}/index_1080p.m3u8`| per-rendition media playlist             |
-| GET    | `/api/v1/media/stream/{id}/{segment}.ts`    | HLS segment                              |
-| GET    | `/api/v1/media/raw/{id}`                    | original, HTTP Range (audio/photos)      |
-| GET    | `/api/v1/media/thumb/{id}`                  | JPEG thumbnail                           |
-| POST   | `/api/v1/collections`                       | `{name, type: playlist\|album}`          |
-| GET    | `/api/v1/collections` / `/{id}`             | list / detail with ordered items         |
-| POST   | `/api/v1/collections/{id}/items`            | `{media_id, position}`                   |
-| DELETE | `/api/v1/collections/{id}/items/{mediaID}`  | remove item                              |
+```text
+Browser → Go API → PostgreSQL
+             ↓
+       media storage
+             ↓
+       FFmpeg workers → thumbnails and HLS renditions
+```
 
-All `/media` and `/collections` routes require `Authorization: Bearer <token>`.
-Media elements (`<video>`, `<img>`, HLS segment fetches) cannot send headers,
-so those endpoints also accept `?token=<jwt>`; the playlist handler re-appends
-the token to every segment URI it serves.
+The Go server serves the built frontend. PostgreSQL and FFmpeg remain runtime dependencies; this is not a dependency-free single-binary deployment.
 
-## Configuration
+| Path | Responsibility |
+|---|---|
+| `cmd/server` | Application startup and lifecycle |
+| `internal/domain` | Domain models and repository interfaces |
+| `internal/usecase` | Application logic |
+| `internal/repository` | PostgreSQL adapters |
+| `internal/delivery/http` | HTTP handlers and middleware |
+| `internal/worker` | Background processing |
+| `pkg/ffmpeg` | FFmpeg and ffprobe integration |
+| `web` | React frontend |
+| `migrations` | Database schema |
 
-Everything is environment-driven; see `.env.example`. The important ones:
+See [configuration and API notes](docs/reference.md) for the current endpoints and settings.
 
-- `MAX_WORKERS` — concurrent FFmpeg jobs (default: half the CPU cores). Keep
-  low on small home servers.
-- `HWACCEL` — `auto` (VideoToolbox on macOS, libx264 elsewhere),
-  `videotoolbox`, or `none`. A failing hardware encoder always falls back to
-  libx264 automatically.
-- `MAX_UPLOAD_BYTES` — hard upload cap (default 10 GiB).
-- `UPLOAD_TTL` — abandoned chunked-upload sessions are reclaimed after this
-  (default 48h).
-- `PROCESS_TIMEOUT` — per-job ceiling so a corrupt file can't wedge a worker.
-- `JWT_SECRET` — set it; otherwise a random one is minted per boot and logins
-  don't survive restarts.
+## Contributing
+
+Bug reports, focused fixes, and documentation improvements are welcome. For larger changes, open a proposal first so we can agree on scope. See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## License
+
+A license has not yet been selected. Public source availability alone does not grant permission to reuse or redistribute the code.
