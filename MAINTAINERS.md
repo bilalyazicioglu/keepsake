@@ -14,16 +14,16 @@ Keep `main` as the integration branch. Work on short-lived `feat/*`, `fix/*`, `d
 
 ## Labels and triage
 
-Use `bug`, `enhancement`, `documentation`, `help wanted`, `good first issue`, and `blocked`. Add `area:uploads`, `area:playback`, `area:library`, and `area:infra` only where useful.
+Use `bug`, `enhancement`, `documentation`, `help wanted`, `good first issue`, `security`, and `blocked`. Add `area:uploads`, `area:playback`, `area:library`, `area:web`, `area:auth`, and `area:infra` only where useful.
 
 Issue forms use the standard bug/enhancement labels; create them first if missing. Reserve `good first issue` for tasks with a clear expected result, relevant files, and a small scope. Do not apply it to security, migrations, or resumable upload correctness.
 
-The initial tracked work is [first-run setup](https://github.com/bilalyazicioglu/keepsake/issues/2), [baseline CI](https://github.com/bilalyazicioglu/keepsake/issues/3), and [a reproducible demo](https://github.com/bilalyazicioglu/keepsake/issues/4). CI checks are not required yet; enable them after the first workflows pass.
+CI (`.github/workflows/ci.yml`) runs the Backend, Frontend and Docker image jobs on every pull request, and all three pass on `main`. Mark them as required status checks in the branch rule. Dependabot opens grouped monthly updates for Go modules, npm and GitHub Actions; merge them only when CI passes.
 
 ## Release readiness
 
-1. Decide and add a real license before advertising the project as open source.
-2. Capture a real screenshot or demo using sample media you can redistribute.
+1. Update `CHANGELOG.md`: move *Unreleased* under the new version.
+2. Refresh `docs/images/` if the interface changed, using sample media you can redistribute.
 3. Run a fresh-install check and a backup/restore check.
 4. Verify persistence through restarts and upload recovery through interruption.
 5. Record supported platforms, actual checks, known limitations, and breaking changes.
