@@ -29,11 +29,12 @@ Frontend, from `web/`:
 
 ```sh
 npm install
+npm test
 npm run lint
 npm run build
 ```
 
-Use Node 22 and `npm ci` to install exactly what the lockfile pins. A successful test command with no test files is not regression coverage. The current frontend package does not define `npm test`; do not report a nonexistent suite as passing.
+Use Node 22 and `npm ci` to install exactly what the lockfile pins. Frontend unit tests run with `npm test`; keep them independent of a running backend or network service.
 
 For upload or playback changes, also exercise the flow with a small non-sensitive sample file and describe the environment. Do not attach personal media or credentials to reports.
 
