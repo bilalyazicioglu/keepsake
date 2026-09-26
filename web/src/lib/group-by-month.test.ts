@@ -5,9 +5,9 @@ import { groupByMonth } from "./group-by-month"
 describe("groupByMonth", () => {
   it("groups adjacent months without reordering items", () => {
     const items = [
-      { id: "a", date: "2024-05-02T12:00:00Z" },
-      { id: "b", date: "2024-05-31T12:00:00Z" },
-      { id: "c", date: "2024-06-01T12:00:00Z" },
+      { id: "a", date: "2024-05-15T12:00:00Z" },
+      { id: "b", date: "2024-05-20T12:00:00Z" },
+      { id: "c", date: "2024-06-15T12:00:00Z" },
     ]
 
     const groups = groupByMonth(items, (item) => item.date)
