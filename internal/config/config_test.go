@@ -85,3 +85,26 @@ func TestLoadReportsEveryInvalidValue(t *testing.T) {
 		}
 	}
 }
+
+func TestLoadCORSAllowedOrigins(t *testing.T) {
+	for _, tt := range []struct {
+		value string
+		want  []string
+	}{
+		{"", nil},
+		{" , , ", nil},
+		{" https://photos.example.com, http://localhost:5173,, ", []string{"https://photos.example.com", "http://localhost:5173"}},
+	} {
+		t.Run(tt.value, func(t *testing.T) {
+			t.Setenv("JWT_SECRET", "test-secret")
+			t.Setenv("CORS_ALLOWED_ORIGINS", tt.value)
+			cfg, err := Load()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if strings.Join(cfg.CORSAllowedOrigins, ",") != strings.Join(tt.want, ",") {
+				t.Fatalf("origins = %v, want %v", cfg.CORSAllowedOrigins, tt.want)
+			}
+		})
+	}
+}

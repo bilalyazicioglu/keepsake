@@ -86,22 +86,30 @@ func RequestLogger(log *slog.Logger) func(http.Handler) http.Handler {
 	}
 }
 
-// CORS is a permissive CORS policy suitable for a personal server whose API
-// and web client may live on different origins during development.
-func CORS(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if origin := r.Header.Get("Origin"); origin != "" {
+// CORS permits cross-origin browser access only for explicitly configured origins.
+func CORS(allowedOrigins []string) func(http.Handler) http.Handler {
+	allowed := make(map[string]struct{}, len(allowedOrigins))
+	for _, origin := range allowedOrigins {
+		allowed[origin] = struct{}{}
+	}
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			h := w.Header()
-			h.Set("Access-Control-Allow-Origin", origin)
+			// Even denied and same-origin responses vary, so caches cannot reuse
+			// a response carrying another origin's CORS policy.
 			h.Add("Vary", "Origin")
-			h.Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
-			h.Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
-			h.Set("Access-Control-Max-Age", "600")
-		}
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
+			origin := r.Header.Get("Origin")
+			if _, ok := allowed[origin]; origin != "" && ok {
+				h.Set("Access-Control-Allow-Origin", origin)
+				h.Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+				h.Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
+				h.Set("Access-Control-Max-Age", "600")
+			}
+			if r.Method == http.MethodOptions {
+				w.WriteHeader(http.StatusNoContent)
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
 }

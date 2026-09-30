@@ -96,7 +96,7 @@ func (a *AuthUsecase) Login(ctx context.Context, username, password string) (str
 			Subject:   user.ID.String(),
 			IssuedAt:  jwt.NewNumericDate(now),
 			ExpiresAt: jwt.NewNumericDate(now.Add(a.ttl)),
-			Issuer:    "outofmatrix",
+			Issuer:    "keepsake",
 		},
 	}
 	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString(a.secret)

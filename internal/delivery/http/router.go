@@ -18,15 +18,16 @@ import (
 // RouterDeps carries everything the router needs, so main.go stays a pure
 // composition root.
 type RouterDeps struct {
-	Log            *slog.Logger
-	Auth           *usecase.AuthUsecase
-	Media          *usecase.MediaUsecase
-	Uploads        *usecase.UploadUsecase
-	Collections    *usecase.CollectionUsecase
-	Hub            *ws.Hub
-	MaxUploadBytes int64
-	WebDir         string
-	Health         func() error // liveness probe, e.g. database ping
+	Log                *slog.Logger
+	Auth               *usecase.AuthUsecase
+	Media              *usecase.MediaUsecase
+	Uploads            *usecase.UploadUsecase
+	Collections        *usecase.CollectionUsecase
+	Hub                *ws.Hub
+	MaxUploadBytes     int64
+	WebDir             string
+	CORSAllowedOrigins []string
+	Health             func() error // liveness probe, e.g. database ping
 }
 
 // NewRouter assembles the chi router with all middleware and routes.
@@ -42,7 +43,7 @@ func NewRouter(d RouterDeps) http.Handler {
 	r.Use(chimw.RealIP)
 	r.Use(RequestLogger(d.Log))
 	r.Use(chimw.Recoverer)
-	r.Use(CORS)
+	r.Use(CORS(d.CORSAllowedOrigins))
 
 	r.Get("/healthz", func(w http.ResponseWriter, req *http.Request) {
 		if d.Health != nil {

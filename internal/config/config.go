@@ -8,13 +8,15 @@ import (
 	"os"
 	"runtime"
 	"strconv"
+	"strings"
 	"time"
 )
 
 // Config holds every runtime setting, populated from environment variables.
 type Config struct {
-	Port   int
-	WebDir string
+	Port               int
+	WebDir             string
+	CORSAllowedOrigins []string
 
 	DatabaseURL string
 
@@ -46,21 +48,22 @@ type Config struct {
 func Load() (*Config, error) {
 	var env envReader
 	cfg := &Config{
-		Port:              env.int("PORT", 8080),
-		WebDir:            env.str("WEB_DIR", "./static"),
-		DatabaseURL:       env.str("DATABASE_URL", "postgres://mediauser:mediapass@localhost:5432/mediacloud?sslmode=disable"),
-		StoragePath:       env.str("STORAGE_PATH", "./data/media"),
-		JWTSecret:         env.str("JWT_SECRET", ""),
-		TokenTTL:          env.duration("TOKEN_TTL", 72*time.Hour),
-		MaxWorkers:        env.int("MAX_WORKERS", defaultWorkers()),
-		JobQueueSize:      env.int("JOB_QUEUE_SIZE", 128),
-		ProcessTimeout:    env.duration("PROCESS_TIMEOUT", 45*time.Minute),
-		MaxUploadBytes:    env.int64("MAX_UPLOAD_BYTES", 10<<30), // 10 GiB
-		HLSSegmentSeconds: env.int("HLS_SEGMENT_SECONDS", 6),
-		HWAccel:           env.str("HWACCEL", "auto"),
-		UploadTTL:         env.duration("UPLOAD_TTL", 48*time.Hour),
-		FFmpegPath:        env.str("FFMPEG_PATH", "ffmpeg"),
-		FFprobePath:       env.str("FFPROBE_PATH", "ffprobe"),
+		Port:               env.int("PORT", 8080),
+		WebDir:             env.str("WEB_DIR", "./static"),
+		CORSAllowedOrigins: env.list("CORS_ALLOWED_ORIGINS"),
+		DatabaseURL:        env.str("DATABASE_URL", "postgres://mediauser:mediapass@localhost:5432/mediacloud?sslmode=disable"),
+		StoragePath:        env.str("STORAGE_PATH", "./data/media"),
+		JWTSecret:          env.str("JWT_SECRET", ""),
+		TokenTTL:           env.duration("TOKEN_TTL", 72*time.Hour),
+		MaxWorkers:         env.int("MAX_WORKERS", defaultWorkers()),
+		JobQueueSize:       env.int("JOB_QUEUE_SIZE", 128),
+		ProcessTimeout:     env.duration("PROCESS_TIMEOUT", 45*time.Minute),
+		MaxUploadBytes:     env.int64("MAX_UPLOAD_BYTES", 10<<30), // 10 GiB
+		HLSSegmentSeconds:  env.int("HLS_SEGMENT_SECONDS", 6),
+		HWAccel:            env.str("HWACCEL", "auto"),
+		UploadTTL:          env.duration("UPLOAD_TTL", 48*time.Hour),
+		FFmpegPath:         env.str("FFMPEG_PATH", "ffmpeg"),
+		FFprobePath:        env.str("FFPROBE_PATH", "ffprobe"),
 	}
 
 	if cfg.Port <= 0 || cfg.Port > 65535 {
@@ -186,4 +189,15 @@ func (e *envReader) duration(key string, def time.Duration) time.Duration {
 		return def
 	}
 	return d
+}
+
+// list trims comma-separated values and ignores empty entries.
+func (e *envReader) list(key string) []string {
+	var values []string
+	for _, value := range strings.Split(os.Getenv(key), ",") {
+		if value = strings.TrimSpace(value); value != "" {
+			values = append(values, value)
+		}
+	}
+	return values
 }

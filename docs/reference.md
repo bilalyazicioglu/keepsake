@@ -9,6 +9,7 @@ See `.env.example` and `docker-compose.yml` together; Compose may override appli
 | Variable | Purpose |
 |---|---|
 | `JWT_SECRET` | Persistent signing secret |
+| `CORS_ALLOWED_ORIGINS` | Comma-separated exact origins; empty by default |
 | `MAX_WORKERS` | Concurrent processing jobs; Compose currently sets 2 |
 | `JOB_QUEUE_SIZE` | Processing queue capacity |
 | `HWACCEL` | Encoder selection: auto, videotoolbox, or none |
@@ -17,6 +18,8 @@ See `.env.example` and `docker-compose.yml` together; Compose may override appli
 | `PROCESS_TIMEOUT` | Maximum processing time per job |
 | `STORAGE_PATH` | Media storage location |
 | `DATABASE_URL` | PostgreSQL connection |
+
+The built interface and Vite development proxy use the same origin as the API and need no CORS configuration. To allow a separate client, set `CORS_ALLOWED_ORIGINS=https://photos.example.com,http://localhost:5173`. Only listed origins receive CORS headers; wildcards are not supported.
 
 ## API groups
 

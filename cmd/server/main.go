@@ -124,14 +124,15 @@ func run() error {
 
 	// --- HTTP server ----------------------------------------------------------
 	router := deliveryhttp.NewRouter(deliveryhttp.RouterDeps{
-		Log:            log,
-		Auth:           authUC,
-		Media:          mediaUC,
-		Uploads:        uploadUC,
-		Collections:    collectionUC,
-		Hub:            hub,
-		MaxUploadBytes: cfg.MaxUploadBytes,
-		WebDir:         cfg.WebDir,
+		CORSAllowedOrigins: cfg.CORSAllowedOrigins,
+		Log:                log,
+		Auth:               authUC,
+		Media:              mediaUC,
+		Uploads:            uploadUC,
+		Collections:        collectionUC,
+		Hub:                hub,
+		MaxUploadBytes:     cfg.MaxUploadBytes,
+		WebDir:             cfg.WebDir,
 		Health: func() error {
 			pingCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 			defer cancel()

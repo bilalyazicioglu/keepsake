@@ -95,7 +95,7 @@ Before opening a pull request, run the same checks as CI:
 
 ```sh
 gofmt -l . && go vet ./... && go test ./...
-cd web && npm run lint && npm run build
+cd web && npm test && npm run lint && npm run build
 ```
 
 ## How it fits together
