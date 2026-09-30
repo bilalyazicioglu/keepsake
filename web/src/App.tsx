@@ -24,6 +24,7 @@ import {
   type User,
 } from "@/lib/api"
 import { toastError } from "@/lib/errors"
+import { groupByMonth } from "@/lib/group-by-month"
 import { useMediaEvents } from "@/hooks/use-media-events"
 import { cn } from "@/lib/utils"
 import { LoginView } from "@/components/login-view"
@@ -65,30 +66,6 @@ const SORT_LABELS: Record<MediaSort, string> = {
   added: "Date added",
   captured: "Date taken",
   name: "Name",
-}
-
-const monthFormat = new Intl.DateTimeFormat(undefined, {
-  month: "long",
-  year: "numeric",
-})
-
-/**
- * Splits an already-sorted list into runs that share a calendar month. Runs
- * are only merged when adjacent, so the grouping never reorders items.
- */
-function groupByMonth(
-  items: MediaItem[],
-  dateOf: (item: MediaItem) => string
-): Array<{ key: string; label: string; items: MediaItem[] }> {
-  const groups: Array<{ key: string; label: string; items: MediaItem[] }> = []
-  for (const item of items) {
-    const d = new Date(dateOf(item))
-    const key = `${d.getFullYear()}-${d.getMonth()}`
-    const last = groups[groups.length - 1]
-    if (last && last.key === key) last.items.push(item)
-    else groups.push({ key, label: monthFormat.format(d), items: [item] })
-  }
-  return groups
 }
 
 export default function App() {

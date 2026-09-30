@@ -34,7 +34,7 @@ npm run lint
 npm run build
 ```
 
-Use Node 22 and `npm ci` to install exactly what the lockfile pins. A successful test command with no test files is not regression coverage. `npm test` runs the browser-session regression tests with Node's built-in test runner.
+Use Node 22 and `npm ci` to install exactly what the lockfile pins. Frontend unit tests run with `npm test`; keep them independent of a running backend or network service.
 
 For upload or playback changes, also exercise the flow with a small non-sensitive sample file and describe the environment. Do not attach personal media or credentials to reports.
 
