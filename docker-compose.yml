@@ -30,6 +30,7 @@ services:
         condition: service_healthy
     environment:
       PORT: "8080"
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-}
       DATABASE_URL: postgres://mediauser:mediapass@db:5432/mediacloud?sslmode=disable
       STORAGE_PATH: /data/media
       # CHANGE THIS in production; see .env.example.

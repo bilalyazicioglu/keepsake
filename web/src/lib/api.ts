@@ -82,15 +82,27 @@ interface UploadSession {
 }
 
 const BASE = "/api/v1"
-const TOKEN_KEY = "oom_token"
-const USER_KEY = "oom_user"
+const TOKEN_KEY = "keepsake_token"
+const USER_KEY = "keepsake_user"
+const LEGACY_TOKEN_KEY = "oom_token"
+const LEGACY_USER_KEY = "oom_user"
+
+function readSessionValue(key: string, legacyKey: string): string | null {
+  let value = localStorage.getItem(key)
+  if (value === null) {
+    value = localStorage.getItem(legacyKey)
+    if (value !== null) localStorage.setItem(key, value)
+  }
+  localStorage.removeItem(legacyKey)
+  return value
+}
 
 export function getToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY)
+  return readSessionValue(TOKEN_KEY, LEGACY_TOKEN_KEY)
 }
 
 export function getStoredUser(): User | null {
-  const raw = localStorage.getItem(USER_KEY)
+  const raw = readSessionValue(USER_KEY, LEGACY_USER_KEY)
   if (!raw) return null
   try {
     return JSON.parse(raw) as User
@@ -102,11 +114,15 @@ export function getStoredUser(): User | null {
 export function storeSession(token: string, user: User): void {
   localStorage.setItem(TOKEN_KEY, token)
   localStorage.setItem(USER_KEY, JSON.stringify(user))
+  localStorage.removeItem(LEGACY_TOKEN_KEY)
+  localStorage.removeItem(LEGACY_USER_KEY)
 }
 
 export function clearSession(): void {
   localStorage.removeItem(TOKEN_KEY)
   localStorage.removeItem(USER_KEY)
+  localStorage.removeItem(LEGACY_TOKEN_KEY)
+  localStorage.removeItem(LEGACY_USER_KEY)
 }
 
 const unauthorizedListeners = new Set<() => void>()

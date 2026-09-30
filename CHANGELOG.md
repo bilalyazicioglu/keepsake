@@ -4,6 +4,15 @@ Notable changes to Keepsake. The format follows [Keep a Changelog](https://keepa
 
 ## Unreleased
 
+### Changed
+
+- JWT issuer and browser session keys now use Keepsake; existing signed-in sessions migrate automatically (#36).
+- Cross-origin browser access is disabled by default; configure exact origins with `CORS_ALLOWED_ORIGINS` (#40).
+
+### Added
+
+- Regression tests for registration, login, token validation and browser session migration (#37, #36).
+
 ## [0.1.0] - 2026-09-25
 
 The first tagged release. Keepsake stores photos, videos and music on your own server, with resumable uploads, HLS streaming, albums and favorites.
